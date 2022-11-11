@@ -1,0 +1,26 @@
+define(
+    [
+        'jquery'
+    ],
+    function ($) {
+        'use strict';
+
+        return {
+            /**
+             * Start full page loader action
+             */
+            startLoader: function () {
+                $('.top-toolbar #ln_overlay').show();
+            },
+
+            /**
+             * Stop full page loader action
+             */
+            stopLoader: function () {
+				var top_items = $('#layer-product-list').find('li.item.product.product-item').length;
+				jQuery('#top_toolbar-amount').find('.toolbar-number').html(top_items);
+                $('.top-toolbar #ln_overlay').hide();
+            }
+        };
+    }
+);

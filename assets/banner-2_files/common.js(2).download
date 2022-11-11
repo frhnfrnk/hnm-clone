@@ -1,0 +1,999 @@
+require(['jquery', 'Magento_Ui/js/modal/modal','mage/translate', 'jquery/validate', 'lazy_load','mage/mage', 'mage/validation'], function ($, modal,$t) {   
+    $('body').on('click', '.products-grid .product-item span.product-image-wrapper img', function(){
+        var clrcd = $(this).closest('a').data('color');
+        createCookie('sclr', clrcd, 1);
+    });    
+    if($('.customer-account-logoutsuccess').length > 0){
+        createCookie('apptus.customerKey', '', 0);
+        api.notify.end();
+    }
+
+    // Hiding Android Mobile App header
+    function hideHeaderApp() {
+        if(navigator.userAgent.indexOf("Build/") !== -1) {
+            if($(window).width()<768) {
+				if(navigator.userAgent.indexOf("Line/") !== -1) {
+					$('.message.global.demo').css({"display" : "none"});
+					$('.page-header').css({"display" : "block"});
+					$('.page-wrapper').css({"margin-top" : "56px", "border-top" : "1px solid #c8c8c8"});
+				}else{
+					$('.page-header, .breadcrumbs').css({"display" : "block", "height" : "0"});
+					$('.page-wrapper').css({"margin-top" : "0", "border" : "0"});
+					$('.header.content .logo.icon-hm-red').hide();
+				}
+                $('.mobile-topFilWrap').addClass('app-device');
+                $('.catalog-product-view').addClass('app-device');
+                if (!(navigator.userAgent.match(/(iPod|iPhone|iPad)/))) {
+                    $('body').addClass('notIos');
+                }
+                else {
+                    $('body').addClass('iOS');
+                }
+            }
+        }
+        else{
+            if((navigator.userAgent.search("MSIE") >= 0 || navigator.userAgent.search("Chrome") >= 0 || navigator.userAgent.search("Firefox") >= 0 || navigator.userAgent.search("Safari") >= 0 || navigator.userAgent.search("Opera") >= 0 || navigator.userAgent.search("NET") >= 0 || navigator.userAgent.search("Edge") >= 0) && $(window).width()<768){
+                $('.page-header').css({"display" : "block"});
+                if(!$('body').hasClass('checkout-index-index')){
+                    $('.page-wrapper').css({"margin-top" : "56px", "border-top" : "1px solid #c8c8c8"});
+                }
+                $('.wishlist-index-index .breadcrumbs').attr('style','display: block !important');
+            }
+            else {
+                if($(window).width()<768) {
+                    $('.page-header, .breadcrumbs').css({"display" : "none", "height" : "0", "opacity" : "0"});
+                    $('.page-wrapper').css({"margin-top" : "0", "border" : "0"});
+                    $('.mobile-topFilWrap').addClass('app-device');
+                    $('.catalog-product-view').addClass('app-device');
+                }
+            }
+        }
+    }
+    hideHeaderApp();
+    $( window ).resize(function() {
+        hideHeaderApp();
+    });
+
+    /*Banner Expandable*/
+    function expandableBanner() {
+        if ($('.responsive .banner.expandable .expander').length > 0 && $(window).width() <  768) {
+            if ($('.responsive .banner.expandable').hasClass('is-open')) {
+                $('.responsive .banner.expandable .expander').show();
+            } else {
+                $('.responsive .banner.expandable .expander').hide();
+            }
+        } else {
+            $('.responsive .banner.expandable .expander').show();
+        }
+    };
+
+    $(window).on('resize', function() {
+       expandableBanner();
+    });
+
+    // Removing arrows when single image on Full view slider in PDP page
+    $(document).ready(function() {
+        var modalitems =  $(".fullscreen-image-modal ul li").length;
+        if (modalitems == 1) {
+            $(".fullscreen-image-modal").addClass("remove-arrows");
+        } else {
+            $(".fullscreen-image-modal").removeClass("remove-arrows");
+        }
+    });
+
+    $(document).ready(function() {
+        //cartAppCount = 0;
+        if(loggedInStatus){
+            $('.hm-sign-in').hide();
+            $('.hm-sign-out').show();
+        }
+        expandableBanner();
+        //appDevPlugin();
+        
+        /*App Plugin Js Starts*/
+        function appDevPlugin() {
+            var pageTitle, pageTemplate, cartCount, sharePageUrl;
+            cartCount ='';
+            pageTitle = $('.page-title-wrapper .page-title .base').text() || document.title;
+            if ($('body').hasClass('modifiedcheckout-index-index') || $('body').hasClass('checkout-cart-index') || $('body').hasClass('checkout-index-index') || $('body').hasClass('customer-address-form')) {
+                if(window.checkoutConfig) {
+                    cartCount = Number(window.checkoutConfig.quoteData.items_qty);
+                }else {
+                    cartCount =0;
+                }
+                pageTemplate = 'checkout';
+            } else if ($('body').hasClass('catalog-category-view') || $('body').hasClass('catalogsearch-result-index')) {
+                pageTemplate = 'prod_cat';
+            } else if ($('body').hasClass('catalog-product-view')) {
+                pageTemplate = 'prod_detail';
+            } else if ($('body').hasClass('customer-account-logoutsuccess')) {
+                 pageTemplate = 'logout';
+            } else if ($('body').hasClass('checkout-onepage-success')) {
+                 pageTemplate = 'success';
+            } else if ($("body[class*='account']").length > 0) {
+                 pageTemplate = 'account';
+            }else {
+                pageTemplate = 'homepage';
+            }
+            var message = {
+                "page_title": pageTitle, 
+                "page_template": pageTemplate, 
+                "cart_count": cartCount , 
+                "share_page_url": window.location.href
+                };
+                          
+                        try {
+ 
+                // Android 
+ 
+                window.Android.postMessage(JSON.stringify(message));
+            }
+ 
+            catch (e) {
+            }
+
+            try {
+                // iOS
+                webkit.messageHandlers.process.postMessage(message);
+            }
+            catch (e) {
+            }
+            
+               
+        }/*App Plugin Js Ends*/
+        
+        $(document).on('click', '.responsive .banner.expandable .banner-text-content', function() {
+            if ($(window).width() <  768) {
+                $(this).closest('.banner.expandable').find('.expander').slideToggle();
+                $(this).closest('.banner.expandable').toggleClass('is-open');
+            }
+        });
+
+        /*Mobile Menu*/
+        function mobileMenu() {
+            if ($('#popup-mobile-nav').length > 0) {
+            var options = {
+                type: 'popup',
+                responsive: true,
+                innerScroll: true,
+                modalClass: 'nav-menu-mobile',
+                buttons: [{
+                    text: $.mage.__('Continue'),
+                    class: 'mymodal1',
+                    click: function () {
+                        this.closeModal();
+                    }
+                }]
+            };
+            var popup = modal(options, $('#popup-mobile-nav'));
+            $(".menu-toggle").on('click',function(){
+                if($('.nav-menu-mobile').hasClass('_show')){
+                    $("#popup-mobile-nav").modal("closeModal");
+                }
+                else{
+                    $("#popup-mobile-nav").modal("openModal");
+                }                
+            });
+            }
+        }
+        mobileMenu();
+
+        if($(window).width()<768) {
+           //Mobile site level3 expand/collapse
+            $(".list-group").append("<span class='after'></span>");
+            $(document).on('click', '.list-group strong, .list-group .after', function(){
+                $(this).parent().toggleClass("open-submenu", 200);
+            });
+
+            $('ul li ul > li').has("ul").addClass('expcolap');
+
+            //Mobile site level4 expand/collapse
+            $(".expcolap").prepend("<span class='after'></span>");             
+            $(document).on('click', '.level3 li .after', function(e){
+                $(this).parent().parent().parent().addClass("open-submenu");
+                e.stopPropagation();
+                $(this).parent().toggleClass("plus-minus");
+                $(this).next().next().toggleClass("open-submenu", 200);
+            });
+        }
+
+        /*STARTS HM Header store locator hide show dropdown*/
+            var container = $(".more-links-dropdown ul.dropdown");
+            $('.more-links-top').on('click', function(){
+                container.show();
+            });
+
+            $(document).mouseup(function(e) 
+            {
+                if (!container.is(e.target) && container.has(e.target).length === 0) 
+            {
+                container.hide();
+            }
+            });
+        /*ENDS HM Header store locator hide show dropdown*/
+        //$(window).load(function(){$("img.lazy").lazyload()});
+        $("img.lazy").lazyload()
+        /*HM Toggle Starts Arrow*/
+        if ($('.toggle-list').length > 0) {
+            $('.js-toggle-trigger').on('click', function() {
+                var parToggleEle = $(this).closest('.toggle-list-item');
+                if (parToggleEle.hasClass('is-open')) {
+                    $(this).attr('aria-expanded', false);
+                    parToggleEle.find('.toggle-list-content').attr('aria-hidden', true);
+                    parToggleEle.removeClass('is-open');
+                } else {
+                    $(this).attr('aria-expanded', true);
+                    parToggleEle.find('.toggle-list-content').attr('aria-hidden', false);
+                    parToggleEle.addClass('is-open');
+                }
+            });
+        }/*HM Toggle Ends*/
+        
+        /*HM Toggle Ends +/-*/
+        if ($('.iparsys.parsys').length > 0) {
+            $(document).on('click','.fixed-width-column.secondary-nav button',function() {
+                $(this).toggleClass('is-opened');
+                $(this).next('ul').slideToggle();
+            });
+            $(document).on('click','.fixed-width-column.secondary-nav strong',function() {
+                $(this).parent().toggleClass('is-opened');
+                $(this).next('ul').slideToggle();
+            });
+        }
+        /*HM Toggle Ends*/
+        
+        /*HM scroll top accordion*/
+        if ($('.one-block-centered .toggle-list').length > 0) {
+            $('.js-toggle-trigger').on('click', function() {
+                if($( window ).width() > 787) {
+                    $('html, body').animate({
+                        scrollTop: $(this).closest('li').offset().top
+                    }, 1000);
+                }else {
+                    $('html, body').animate({
+                        scrollTop: $(this).closest('li').offset().top - 57
+                    }, 1000);
+                }
+            });
+        }
+        /*HM scroll top accordion Ends*/
+        
+        //If Modal element is there in call the function
+        function customModal(contentName, triggerEle, className, title, pageClass) {
+            if ($.trim($(contentName).html()).length > 0 && $('body').hasClass(pageClass)) {
+                var options = {
+                    type: 'popup',
+                    responsive: false,
+                    innerScroll: false,
+                    modalClass: className,
+                    title: title,
+                    buttons: false,
+                    clickableOverlay: true
+                };
+                var popup = modal(options, $(contentName));
+                $(contentName).modal();
+                $(document).on('click', triggerEle ,function (e) {
+                    e.preventDefault();
+                    $(contentName).modal("openModal");
+                });
+            }
+        }
+        //END If Modal element is there in call the function
+        
+        //Custom modals
+        customModal('.main.parsys.modal', '.one-block-centered .track-modal', 'hm-modal', $t('PRIVACY NOTICE'),'cms-customer-service-html');
+        customModal('.main.parsys.modal', '.one-block-centered .track-modal', 'hm-modal', $t('PRIVACY NOTICE'),'contact-index-index');
+        customModal('.pdp-details-content', '.js-open-more-details', 'hm-side-modal', $t('Details'), 'catalog-product-view');
+        customModal('.pdp-delivery-content', '.js-open-delivery', 'hm-side-modal', $('.pdp-delivery-content h2.hideImp').text(), 'catalog-product-view');
+        customModal('.return-modal', '.cart-summary-top .overlay-trigger', 'hm-modal', $('.return-modal .parsys h2.heading').text(), 'checkout-cart-index');
+        customModal('#sizeguide-content', '.sg-button', 'hm-side-modal hm-tab-modal', $t(''), 'catalog-product-view');
+
+        //wishlist - start
+        customModal('.ladies-top-size-modal', '.size-guide-ladies', 'hm-side-modal hm-tab-modal', $t(''), 'wishlist-index-index');
+        customModal('.kids-top-size-modal', '.size-guide-kids', 'hm-side-modal hm-tab-modal', $t(''), 'wishlist-index-index');
+        customModal('.men-top-size-modal', '.size-guide-men', 'hm-side-modal hm-tab-modal', $t(''), 'wishlist-index-index');
+        customModal('.hmhome-top-size-modal', '.size-guide-hm-home', 'hm-side-modal hm-tab-modal', $t(''), 'wishlist-index-index');
+        //wishlist - end
+       
+       customModal('#sizeguide-content-2', '.sg-button', 'hm-side-modal hm-tab-modal hm-size-modal-hid-header', $t(''), 'catalog-product-view');
+        customModal('.main.parsys.modal', '.customer-account-create a.underline.privacy-notice', 'hm-modal', $t('PRIVACY NOTICE'),'customer-account-create');
+        customModal('.men-top-size-modal', '#size-guide-men-trigger', 'hm-modal hm-size-top-modal', $t('Men'),'hm-quick-size-body');
+        customModal('.ladies-top-size-modal', '#size-guide-ladies-trigger', 'hm-modal hm-size-top-modal', $t('Ladies'),'hm-quick-size-body');
+        customModal('.kids-top-size-modal', '#size-guide-kids-trigger', 'hm-modal hm-size-top-modal', $t('Kids'),'hm-quick-size-body');
+        customModal('.hmhome-top-size-modal', '#size-guide-hmhome-trigger', 'hm-size-top-modal hm-modal', $t('H&M Home'),'hm-quick-size-body');
+        customModal('.main.error.login.modal', '#click-modal', 'hm-login-error-modal hm-modal', $t('SIGN-IN FAILED'),'customer-account-login');
+        customModal('.js-confirm-exit-modal', '.trigger-exit-modal', 'confirm-exit-modal hm-modal', $t(''),'checkout-index-index');
+        customModal('#checkout-delivery-info-modal', '.delivery-info-modal-trigger', 'delivery-info-modal-wrap hm-modal', $t('DELIVERY'),'checkout-index-index');
+        customModal('#checkout-privacy-agreement-link-modal', '.agreement-link-overlay-trigger', 'privay-agree-modal-wrap hm-modal', $('#checkout-privacy-agreement-link-modal .main-top-heading').text(),'checkout-index-index');
+        customModal('#checkout-cta-tnc-modal', '.cta-tnc-modal', 'cta-tnc-modal-wrap hm-modal', $t('TERMS & CONDITIONS'),'checkout-index-index');
+        customModal('#checkout-cta-notice-modal', '.cta-notice-modal', 'cta-notice-modal-wrap hm-modal', $t('ONLINE PURCHASE'),'checkout-index-index');
+
+        //show hide favourites page ladies sizeguide popup
+        $(document).on('click', '.size-guide-ladies' ,function () {
+                $('.ladies-top-size-modal #sizeguide-content').show();
+        });
+        $(document).on('click', '.size-guide-hm-home, .size-guide-kids, .size-guide-men' ,function () {
+            $('.ladies-top-size-modal #sizeguide-content').hide();
+        });
+
+        // Change Location Modal function
+         function changelocationModal(contentName, triggerEle, className, title) {
+            if ($.trim($(contentName).html()).length > 0) {
+                var options = {
+                    type: 'popup',
+                    responsive: false,
+                    innerScroll: false,
+                    modalClass: className,
+                    title: title,
+                    buttons: false,
+                    clickableOverlay: true
+                };
+                var popup = modal(options, $(contentName));
+                $(contentName).modal();
+                $(document).on('click', triggerEle ,function (e) {
+                    e.preventDefault();
+                    $(contentName).modal("openModal");
+                });
+            }
+        }
+
+        changelocationModal('.js-change-location-modal', '.trigger-change-location', 'confirm-exit-modal change-location-modal hm-modal', $t(''));
+        //End Custom Modals
+        
+        /*scroll to top functionality*/
+        function backToTop() {
+            scrollToTop();
+            $(window).resize(function() {
+                scrollToTop();
+            });
+            function scrollToTop() {
+                window.onscroll = function() {scrollFunction()};
+                function scrollFunction() {
+                    if (document.body.scrollTop > 2500 || document.documentElement.scrollTop > 2500) {
+                        $('#bottom-to-top').addClass('show');
+                    } else {
+                        $('#bottom-to-top').removeClass('show');
+                    }
+                }
+                // When the user clicks on the button, scroll to the top of the document
+                function topFunction() {
+                    document.body.scrollTop = 0;
+                    document.documentElement.scrollTop = 0;
+                }
+                $('#bottom-to-top').on('click',function() {
+                    topFunction();
+                });
+            }
+        }
+        backToTop();
+        /*scroll to top functionality*/
+        
+        /*hover image starts*/
+        function hoverImage() {
+           $(document).on('mouseenter', '.product-image-wrapper', function() {
+                var hoverimage = $(this).find('img').attr('data-hover-image');
+                var normalImage = $(this).find('img').attr('data-default-image');
+                if (hoverimage && normalImage) {
+                    $(this).find('img').attr('src', hoverimage);
+                }
+            });
+            $(document).on('mouseleave', '.product-image-wrapper', function() {
+                var hoverimage = $(this).find('img').attr('data-hover-image');
+                var normalImage = $(this).find('img').attr('data-default-image');
+                if (hoverimage && normalImage) {
+                    $(this).find('img').attr('src', normalImage);
+                } 
+            });
+        }
+        hoverImage();
+        /*hover image ends*/
+        
+        /*footer*/
+        $(document).on('click','.footer-heading .toggle-button', function() {
+            $(this).closest('.footer-category').toggleClass('is-open');
+            $(this).closest('.footer-category').siblings().removeClass('is-open');
+        });
+        
+        /* login-register popup start */
+        $('.toggle-password-visibility').on('click',function() {
+            if($(this).text() == $t('SHOW')) {
+                $(this).text($t('HIDE'));
+                $(this).siblings("input[type='password']").prop("type", "text");
+            }
+            else {
+                $(this).text($t('SHOW'));
+                $(this).siblings("input[type='text']").prop("type", "password");
+            }
+        });
+        
+        $('li.authorization-link').on('click', function(e) {
+            if(!$('.block-customer-login').hasClass('active') || !$('.block-customer-register').hasClass('active')){
+                $('.block-customer-login').addClass('active');
+            }else{
+                $('.block-customer-login, .block-customer-register').removeClass('active');
+            }
+            e.preventDefault();   
+        });
+        
+        $('.inputwrapper.join button.register').on('click', function() {
+            $('.block-customer-login').removeClass('active');
+            $('.block-customer-register').addClass('active');
+        });
+        $('.inputwrapper.back button.login-back').on('click', function() {
+            $('.block-customer-register').removeClass('active');
+            $('.block-customer-login').addClass('active');
+        });
+        $(document).mouseup(function(e) {
+            if (!$('.block-customer-login, .block-customer-register').is(e.target) && $('.block-customer-login, .block-customer-register').has(e.target).length === 0) 
+            {
+                $('.block-customer-login, .block-customer-register').removeClass('active');
+            }
+        });
+        
+        $(".control").each(function() {
+            var $inp = $(this).find("input"),
+            $cle = $(this).find(".clearable__clear");
+            $inp.on("input", function(){
+                $cle.toggle(!!this.value);
+            });
+            $cle.on("touchstart click", function(e) {
+                e.preventDefault();
+                if($(this).hasClass('mage-error')) {
+                $('.clearable__clear').addClass('red');
+                }
+                $inp.val("").trigger("input");
+            });
+        });
+        
+        $.validator.addMethod('hm_phone_require_1', function (value) {
+            return $.trim(value).length > 0 && $.trim(value).length < 11;
+        }, $t('Please enter valid mobile number'));
+        
+        $.validator.addMethod('hm_subject_area', function (value) { return $.trim(value).length > 0; }, $t('Choose Subject'));
+        $.validator.addMethod('hm_comment', function (value) { return $.trim(value).length > 0; }, $t('You have to enter a question'));
+        $.validator.addMethod('hm_email_require_1', function (value) { return $.trim(value).length > 0; }, $t('You have to enter an email address'));
+        $.validator.addMethod('hm_pwd_require_1', function (value) { return $.trim(value).length > 0; }, $t('Please enter a password'));
+        $.validator.addMethod('hm_pwd_short', function (value) { return $.trim(value).length > 5; }, $t('The password is too short'));
+        $.validator.addMethod('hm-email-id-type-1', function (value) { 
+            var emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+            return $.trim(value).length > 0 && value.match(emailPattern);
+        }, $t('The email address you have entered is incorrect'));
+        $.validator.addMethod('hm-email-id-type-2', function (value) {
+            var emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+            return $.trim(value).length > 0 && value.match(emailPattern);
+        }, $t('Please enter a valid email'));
+        $.validator.addMethod('hm-email-id-type-3', function (value) {
+            return $.trim(value).length > 0;
+        }, $t('Enter email address'));
+        
+        /*Start validation for Email and Password field in header popup and signin and register page*/
+            $.validator.addMethod('hm_password_require_1', function (value) {
+                return $.trim(value).length > 0;
+            }, $t('You have to confirm your password'));
+            $.validator.addMethod('hm_password_require_reset', function (value,elm) {
+                if($(window).width() > 768){
+                    $(elm).siblings('.input-info').show();
+                }                
+                $('.validation-icon').addClass('icon-invalid');
+                return $.trim(value).length > 0;
+            }, $t('Please enter a password.'));
+            $.validator.addMethod('validate-password-text', function(v, elm) {
+                var validator = this,length = 0,counter = 0;
+                var passwordMinLength = 8;
+                var passwordMinCharacterSets = 4;
+                var pass = $.trim(v);
+                var result = false;
+                if (counter < passwordMinCharacterSets) {
+                    if (pass.length < passwordMinLength) {
+                        validator.passwordErrorMessage = $t("The password is too short");
+                    }
+                }
+                if (pass.length >= passwordMinLength) {
+                    counter ++;
+                    var currentEle = $(elm).siblings('.input-info').find('span.minchar');
+                    currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+                }
+                if (pass.match(/\d+/)) {
+                    counter ++;
+                    var currentEle = $(elm).siblings('.input-info').find('span.number');
+                    currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+                }
+                if (pass.match(/[a-z]+/)) {
+                    counter ++;
+                    var currentEle = $(elm).siblings('.input-info').find('span.lowercase');
+                    currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+                }
+                if (pass.match(/[A-Z]+/)) {
+                    counter ++;
+                    var currentEle = $(elm).siblings('.input-info').find('span.uppercase');
+                    currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+                }
+                
+                if(counter == passwordMinCharacterSets) {
+                    result = true;
+                    $('.inputwrapper .input-info span').addClass('green passed');
+                    validator.passwordErrorMessage = "";
+                }else{
+                    validator.passwordErrorMessage = $t("Your password must be:");
+                }
+                return result;
+            }, function () {
+                return this.passwordErrorMessage;
+            });
+        /*End validation for Email and Password field in header popup and signin and register page*/
+        
+            $(document).on('keyup change','.header.links .block.block-customer-register .register-popup-inner .form-create-account .fieldset.account .inputwrapper input[name="password"]', function() {
+                $('.inputwrapper .input-info span').removeClass('green passed');
+                $('.inputwrapper .input-info span.icon').removeClass('display');
+                $(this).siblings('.input-info').show();
+                $(this).siblings('.mage-error').hide();
+                $(this).siblings('span.icon').removeClass('icon-valid icon-invalid');
+                $(this).removeClass('border-bottom-red');
+                $(this).valid();                
+                if(!$(this).valid()){                    
+                    $(this).siblings('span.icon').addClass('icon-invalid');
+                    $(this).addClass('border-bottom-red');
+                }
+                else {
+                    $(this).siblings('span.icon').addClass('icon-valid');
+                    $(this).removeClass('border-bottom-red');
+                }
+            });
+        
+        
+        $(document).on('keyup change','.customer-account-create .page-main .input-pair .inputwrapper input[name="password"]', function() {
+            $('.inputwrapper .input-info span').removeClass('green passed');
+            $('.inputwrapper .input-info span.icon').removeClass('display');
+            $(this).siblings('.input-info').show();
+            $(this).siblings('.mage-error').hide();
+            $(this).siblings('span.icon').removeClass('icon-valid icon-invalid');
+            $(this).removeClass('border-bottom-red');
+            $(this).valid();                
+            if(!$(this).valid()){ 
+                $(this).addClass('border-bottom-red');
+                $(this).siblings('span.icon').addClass('icon-invalid');
+            }
+            else {
+                $(this).siblings('span.icon').addClass('icon-valid');
+                $(this).removeClass('border-bottom-red');
+            }
+        });
+//        $(window).on('load', function(){
+//            $(document).on('focusout','.header.links .block.block-customer-login .login-popup-inner .form-login .fieldset.login .inputwrapper input[type=password],.header.links .block.block-customer-login .login-popup-inner .form-login .fieldset.login .inputwrapper input[type=email], .header.links .block.block-customer-register .register-popup-inner .form-create-account .fieldset.account .inputwrapper input[type=password], .header.links .block.block-customer-register .register-popup-inner .form-create-account .fieldset.account .inputwrapper input[type=email],.customer-account-forgotpassword .page-main .inputwrapper .control input[type=email],.customer-account-create .page-main .input-pair .inputwrapper input[type=email], .customer-account-create .page-main .input-pair .inputwrapper input[type=password], .customer-account-login .page-main .block-customer-login .inputwrapper .control input[type=email], .customer-account-login .page-main .inputwrapper .control input[type=password]', function() {
+//                $(this).siblings('span.icon').removeClass('icon-valid icon-invalid');
+//                $(this).removeClass('border-bottom-red');
+//                $(this).valid();                
+//                if(!$(this).valid()){  
+//                    $(this).addClass('border-bottom-red');
+//                    $(this).siblings('span.icon').addClass('icon-invalid');
+//                }else {
+//                    $(this).siblings('span.icon').addClass('icon-valid');
+//                    $(this).removeClass('border-bottom-red');
+//                }
+//            });
+//        });
+                
+        /*Login-register */
+        var confirm = $("input:checkbox:checked");        
+        var dataForm = $('#register-popup-form');
+        var ignore = 'null';
+        dataForm.mage('validation', {
+            ignore: ignore ? ':hidden:not(' + ignore + ')' : ':hidden'
+        }).find('input:text').attr('autocomplete', 'off');
+        $(document).on('click','.register-btn', function() {
+            if(!dataForm.valid()) {
+                $('.button-validation-message').show();
+                $('.animation-container').show('blind');
+                setTimeout(function() {
+                    $(".animation-container").hide('blind', {}, 500)
+                }, 5000);
+                $('#form-validate1 .action-form-list .checkbox-label').addClass('red');
+            }
+        });
+        /*Login-register */
+        /*cart/checkout coupon code*/
+                /*coupon form button enable/disbale*/
+        $(document).on('change keyup', '#coupon_code, #discount-code', function() {
+           if ($.trim($(this).val()).length > 0) {
+               $(this).closest('form').find('.action.apply, .action-apply').removeAttr('disabled');
+           } else {
+               $(this).closest('form').find('.action.apply, .action-apply').attr('disabled', 'disabled');
+           }
+        });
+        
+        
+        
+    });
+    /* $(document).ready(function(){
+        convertToSelect('.field-district .control','[name="district"]','district');
+        getCityJson();
+        var cityData;       
+
+        function getCityJson() {
+			var url = $('#hmmediaurl').val();
+			if (url != 'undefined' || url !='') {
+				$.getJSON($('#hmmediaurl').val() + 'statecitymapping.json', function(data) {
+					cityData = data;
+				});
+			}
+        }       
+        
+        $(document).on('change', '.chaneRegion', function() {
+            var regionValue = $(this).val();            
+            var optionList = '<option value="">'+$t('Please Select a Town or city')+'</option>';
+            if (regionValue) {
+                if (cityData == undefined || cityData =='') {
+                    getCityJson();
+                }
+                
+                $.each(cityData, function(key, v){
+                    $.each(v, function(index, value){
+                    if (regionValue == value.region_id) {
+                        $.each(value.city, function(ind, val){
+                            optionList = optionList + '<option value="' + val + '">' + val +'</option>';
+                        });
+                        return;
+                    }
+                    });
+                });
+            }            
+            $('[name="city"]').html(optionList).trigger('change');
+
+            //select district
+            var defaultCity = $("#savedcity").val();
+            var defaultDistrict = $("[name='district_input']").val();
+
+            if(defaultCity)
+            {
+                populateDistrict('[name="district"]',defaultCity);
+                $('select[name="district"]').val(defaultDistrict);
+            }
+
+        });
+        
+        
+        function defaultCitySelect() {
+            var defaultRegion = $(".chaneRegion option:selected").val();
+            
+            if(defaultRegion){
+                var optionList = '<option value="">'+$t('Please Select a Town or city')+'</option>';
+                var defaultCity = $("#savedcity").val();
+                var selected = '';
+                if (cityData == undefined || cityData =='') {
+                    getCityJson();
+                }
+                $.each(cityData, function(key, v){
+                    $.each(v, function(index, value){
+                    if (defaultRegion == value.region_id) {
+                        $.each(value.city, function(ind, val){
+                            selected= '';
+                            if(defaultCity == val){ selected="selected" }
+                            optionList = optionList + '<option value="' + val + '" '+ selected +'>' + val +'</option>';
+                        });
+                        return;
+                    }
+                    });
+                });
+                $('[name="city"]').html(optionList).trigger('change');
+            }
+            var defaultCity = $("#savedcity").val();
+            populateDistrict('[name="district"]',defaultCity);
+            var defaultDistrict = $("[name='district_input']").val();
+            $('select[name="district"]').val(defaultDistrict);
+
+        }
+        //for district dropdown
+        $('[name=city]').on('change',function(e){
+            populateDistrict('[name="district"]',$(this).val());
+        });
+
+        function populateDistrict(target,value)
+        {
+            $('select'+target+' option').remove();
+            convertToSelect('.field-district .control','[name="district"]','district');
+            if(value)
+            {
+                var districts = new Array();
+                    //districts = ;
+                //console.log(cityData.result.district[value]);
+                Object.keys(cityData.result.district[value]).sort().forEach(function(val,index){
+                    var o = new Option(index,$t(val));
+                    $(o).html(val);$('select'+target).append(o);
+                });
+            }
+
+        }
+        function convertToSelect(container,control,controlName)
+        {
+            $(container+' '+'input'+control).attr('name','district_input').hide();
+            if($('select'+control).length == 0)
+            {
+                var err = $t('Please enter a district');
+                $(container).append('<select data-validate="{\'required\':true}" data-msg-required="'+err+'" name="'+controlName+'"></select>');
+            }
+
+        }
+
+
+        setTimeout(function(){ defaultCitySelect(); }, 1000);
+    }); */
+        
+    /*Reset Password Page validation*/
+    
+    $.validator.addMethod('hm_confirmpassword_empty_reset', function (value) {
+            return $.trim(value).length > 0;
+        }, $t('Please confirm your password.'));
+    $.validator.addMethod('hm_confirmpassword_equals', function (value) {
+            return $.trim(value) == $('#password').val();
+        }, $t('Please confirm your password.'));
+    
+    $.validator.addMethod('validate-postcode', function (v) {
+        return $.trim(v).length == 5 && (/^[0-9]*$/i.test(v));
+        
+    }, $t('Please enter a valid postcode'));
+    
+    $.validator.addMethod('hm_fname_account', function (value) {
+        return $.trim(value).length > 0;
+    }, $t('Please enter a first name'));
+    $.validator.addMethod('hm_lname_account', function (value) {
+        return $.trim(value).length > 0;
+    }, $t('Please enter a last name'));
+    $.validator.addMethod('hm_fname_account1', function (value) {
+        return value.match(/^[A-Za-z0-9 # ' -]*$/);
+        //return value.match(/^[a-zA-Z]*$/);
+    }, $t('Special characters not allowed'));
+    $.validator.addMethod('hm_lname_account1', function (value) {
+        return value.match(/^[A-Za-z0-9 # ' -]*$/);
+        //return value.match(/^[a-zA-Z]*$/);
+    }, $t('Special characters not allowed'));
+	
+	$.validator.addMethod('hm_address_street_30', function (value) {
+		return $.trim(value).length <= 30;
+	}, $t('The maximum allowed character length is 30.'));
+	    
+	$('.form-address-edit').on('focus','.hm_address_street_30',function(){  $('.hm_address_street_30').attr('maxlength',30); });
+	
+    $('.customer-address-form .action.submit.primary').on('click', function() {
+        setTimeout(function(){  
+            $('input, select').each(function () {
+                if($(this).hasClass('mage-error')) {
+                    $(this).siblings('.validation-icon').removeClass('icon-valid').addClass('icon-invalid');
+                }
+                else {
+                    $(this).siblings('.validation-icon').removeClass('icon-invalid').addClass('icon-valid');
+                }
+            }); 
+        }, 50);
+        
+        
+    })
+    
+    
+    $.validator.addMethod('validate-password-text-reset', function(v, elm) {
+        var validator = this,length = 0,counter = 0;
+        var passwordMinLength = 8;
+        var passwordMinCharacterSets = 4;
+        var pass = $.trim(v);
+        var result = false;
+        if (counter < passwordMinCharacterSets) {
+            if (pass.length < passwordMinLength) {
+                validator.passwordErrorMessage = $t("The password is too short");
+            }
+        }
+
+        if (pass.length >= passwordMinLength) {
+            counter ++;
+            var currentEle = $(elm).siblings('.input-info').find('span.minchar');
+            currentEle.addClass('green passed');
+            currentEle.find('.icon-valid').addClass('display');
+        }
+        if (pass.match(/\d+/)) {
+            counter ++;
+            var currentEle = $(elm).siblings('.input-info').find('span.number');
+            currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+        }
+        if (pass.match(/[a-z]+/)) {
+            counter ++;
+            var currentEle = $(elm).siblings('.input-info').find('span.lowercase');
+            currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+        }
+        if (pass.match(/[A-Z]+/)) {
+            counter ++;
+            var currentEle = $(elm).siblings('.input-info').find('span.uppercase');
+            currentEle.addClass('green passed');            currentEle.find('.icon-valid').addClass('display');
+        }
+
+        if(counter == passwordMinCharacterSets) {
+                                result = true;
+            $('.inputwrapper .input-info span').addClass('green passed');
+                                validator.passwordErrorMessage = "";
+        }
+        return result;
+    }, function () {
+        return this.passwordErrorMessage;
+    });
+    $(document).on('keydown','.customer-account-createpassword #password',function() {
+        $('.column.main .input-info.js-validtips').show();
+    });
+    $(document).on('click','.customer-account-createpassword .actions-toolbar .submit', function() {
+        setTimeout(function(){
+        if($('.customer-account-createpassword #password-confirmation.input-text').hasClass('mage-error') || $('.customer-account-createpassword #password.input-text').hasClass('mage-error')) {
+            $('.customer-account-createpassword .custom-reset-password-msg').show();
+            $('footer').before('<div class="animation-container animate resin is-stuck" style="width: 100%; top: 0px;"><div class="responsive status-message is-open notify" data-background-color="red" style="z-index: 1;"><div class="message icon icon-cross-circle-white" role="alert" aria-live="assertive" style="max-width: 550px;"><span>'+$t("This form could not be submitted. Please review your information.")+'</div></div></div>');
+                    setTimeout(function(){  $(".animation-container").animate({ "opacity": "hide", top:"0"}, 500); }, 3000);
+        }
+        }, 50);
+    });
+    
+    $(document).on('keyup change','.customer-account-createpassword .input-text', function() {
+            $('.column.main .input-info span').removeClass('green passed');
+            $('.column.main .input-info span.icon').removeClass('display');
+            $(this).siblings('.input-info').show();
+            $(this).siblings('.mage-error').hide();
+            $(this).siblings('span.icon').removeClass('icon-valid icon-invalid');
+            $(this).removeClass('border-bottom-red');
+            $(this).valid();                
+            if(!$(this).valid()){ 
+                $(this).addClass('border-bottom-red');
+                $(this).siblings('span.icon').addClass('icon-invalid');
+            }
+            else {
+                $(this).siblings('span.icon').addClass('icon-valid');
+                $(this).removeClass('border-bottom-red');
+            }
+        });
+    /*END Reset Password Page validation*/
+
+    /*Start Create Account page checkbox validation*/
+    $(document).on('mousedown click', '.customer-account-create .register-btn', function () {
+        if ($('.customer-account-create .checkbox-input').is(':checked')) {
+            $('.customer-account-create .checkbox-input').siblings('label.checkbox-label').css('color', '#1a1a1a');
+            $('.customer-account-create .checkbox-input').siblings('label.checkbox-label').find('.privacy-notice').css('color', '#1a1a1a');
+        }
+        else {
+            $('.customer-account-create .checkbox-input').siblings('label.checkbox-label').css('color', '#e02b27');
+            $('.customer-account-create .checkbox-input').siblings('label.checkbox-label').find('.privacy-notice').css('color', '#e02b27');
+        }
+    });
+    /*End Create Account page checkbox validation*/
+});
+
+
+require(['jquery'],function($){
+    
+    $(document).ready(function(){
+            // Wishlist
+        $('.ajax-add-to-wishlist').removeClass('addedInWishlist');
+        if(myHmList){
+            var dmyHmList = decodeURIComponent(myHmList).split(','); //decoded list
+            if(dmyHmList){
+                $.each(dmyHmList,function(i,v){
+                    $('#wishlist'+v).addClass('addedInWishlist');
+                    $('.spwishlist'+v).addClass('addedInWishlist');
+                });  
+            }
+        }
+                //product category
+                if($('.products.wrapper').hasClass('voucher-cat')){
+                    $('body').addClass('cat-voucher');
+                }
+
+        //campaign page video play
+       $('#icon-play').on('click',function(ev){
+            $(this).closest('.video-wrapper').children('.icon-play').css('display','none');
+            $(this).closest('.video-wrapper').children('.splashscreen').css('display','none');
+            loadPlayer();
+            function loadPlayer() {
+                if (typeof(YT) == 'undefined' || typeof(YT.Player) == 'undefined') {
+                    var tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    var firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    window.onYouTubePlayerAPIReady = function() {
+                        onYouTubePlayer();
+                    };
+                } else {
+                    onYouTubePlayer();
+                }
+            }
+            var player;
+            function onYouTubePlayer() {
+                player = new YT.Player('player', {
+                    height: '100%',
+                    width: '100%',
+                    videoId: '7EQ2FkenUZ4',
+                    playerVars: { 
+                        autoplay:1, 
+                        controls:1, 
+                        showinfo: 0, 
+                        rel: 0, 
+                        showsearch: 0,
+                        enablejsapi: 1,
+                    },
+                    events: {
+                        'onStateChange': onPlayerStateChange
+                    }
+                });
+            }
+            var done = false;
+            function onPlayerStateChange(event) {
+                if (event.data == YT.PlayerState.PLAYING && !done) {
+                    done = true;
+                } else if (event.data == YT.PlayerState.ENDED) {
+                    $('.icon-play').css('display','block');
+                    $('.splashscreen').css('display','block');
+                    $('#player').remove();
+                    $( "<div id='player'>Test</div>" ).insertBefore( ".splashscreen" );
+                }
+            }
+        });
+
+        /*PDP thumb click move to top*/
+         $(document).on('click', '.product-info-main .pdpthumb', function() {
+            $('html, body').animate({
+                scrollTop: $(".hm-gallery").offset().top - 30
+            }, 'slow');
+        });
+        /*PDP thumb click move to top ends*/
+
+        //Store locator list ecpand/collapse
+        $(document).on('click', '.toggle-expand', function(){
+              $(this).closest('.store').toggleClass("is-open");
+              $(this).closest('.store').find('input').attr('checked', true).trigger('click');
+        });
+
+    });
+    /*STARTS Address book city state validation icon*/
+    $(document).on('click','.customer-address-form .column.main .action.submit', function() {
+        setTimeout(function(){ 
+            if($('#region_id').hasClass('mage-error')){
+                $('#region_id').siblings('.validation-icon').addClass('icon-invalid').removeClass('icon-valid');  
+            } 
+            if($('#city').hasClass('mage-error')){
+                $('#city').siblings('.validation-icon').addClass('icon-invalid').removeClass('icon-valid');  
+            } 
+        }, 50);
+
+    });
+/*ENDS Address book city state validation icon*/
+
+    /*Starts hover scroll issue fix*/
+        $(window).scroll(function () { $('button, a').trigger("blur");     })
+    /*Ends hover scroll issue fix*/
+});
+
+// Cookie functions
+function createCookie(name, value, days) { 
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        var expires = '; expires=' + date.toGMTString();
+    } else var expires = '';
+    document.cookie = name + '=' + value + expires + '; path=/; secure=false';
+}
+
+function readCookie(name) {
+    var nameEQ = name + '=',
+        ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+function deleteCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+if(customerJustRegistered && customerJustRegistered=='1'){
+    createCookie('apptus.customerKey', uuid, 365);
+}

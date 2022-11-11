@@ -1,0 +1,302 @@
+(function() {
+  const script = document.getElementById('atome-intro-js') || document.currentScript;
+  let { country = 'sg', lang = 'en' } = queryParams(script && script.src);
+  country = country.toLowerCase();
+  lang = lang.toLowerCase();
+  const isTest = /wc-test|localhost|\.apaylater\.net/.test(location.href);
+  const baseUrl = isTest ? 'https://gateway.apaylater.net' : 'https://gateway.apaylater.com';
+  const introBaseUrl = baseUrl + '/plugins/intro';
+  const imgSrcs = {
+    close: introBaseUrl + '/close.png',
+    logo: baseUrl + '/plugins/common/assets/svg/logo.svg',
+    zero_interest: introBaseUrl + '/ic-interest.svg',
+    split_into_3: introBaseUrl + '/ic-installments.svg',
+    hundreds_merchants: introBaseUrl + '/ic-merchants.svg',
+    arrow_back: introBaseUrl + '/arrow-back.svg',
+  };
+
+  const head = document.getElementsByTagName('head')[0];
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.type = 'text/css';
+  link.href = introBaseUrl + '/index.css';
+  link.media = 'all';
+  head.appendChild(link);
+
+  if (/amazingraze.com/.test(location.hostname) && /\/checkout/.test(location.pathname)) {
+    const thirdTcLink = document.createElement('script');
+    thirdTcLink.async = true;
+    thirdTcLink.src = baseUrl + '/plugins/terms-conditions/amazin-graze.js';
+    head.appendChild(thirdTcLink);
+  }
+
+  String.prototype.AtomeFormat = function (tokens) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    let formatted = this;
+    for (const key in tokens) {
+      if (tokens.hasOwnProperty(key)) {
+        formatted = formatted.replace(RegExp('{' + key + '}', 'g'), tokens[key]);
+      }
+    }
+    return formatted;
+  };
+
+  let currentTCLink = 'https://www.atome.sg/en-sg/terms-of-service';
+  const countryConfig = {
+    sg: {
+      offical_site: 'https://www.atome.sg',
+      t_c_link: 'https://www.atome.sg/en-sg/terms-of-service',
+    },
+    hk: {
+      offical_site: 'https://www.atome.hk/{lang}-hk',
+      t_c_link: 'https://www.atome.hk/{lang}-hk/terms-of-service',
+    },
+    my: {
+      offical_site: 'https://www.atome.my',
+      t_c_link: 'https://www.atome.my/en-my/terms-of-service',
+    },
+    id: {
+      offical_site: 'https://www.atome.id',
+      t_c_link: 'https://www.atome.id/id-id/terms-of-service',
+    },
+    th: {
+      offical_site: 'https://www.atometh.com',
+      t_c_link: 'https://www.atometh.com/{lang}-th/terms-of-service',
+    },
+    jp: {
+      offical_site: 'https://www.atome.co.jp/',
+      t_c_link: 'https://www.atome.co.jp/terms-of-service',
+    },
+    ph: {
+      offical_site: 'https://www.atome.ph/',
+      t_c_link: 'https://www.atome.ph/terms-of-service',
+    }
+  };
+
+  currentTCLink = typeof countryConfig[country] != 'undefined' ? countryConfig[country]['t_c_link'] : currentTCLink;
+  currentTCLink = currentTCLink.AtomeFormat({
+    lang: lang
+  });
+
+  let currentOfficalSite =
+    typeof countryConfig[country] != 'undefined' ? countryConfig[country]['offical_site'] : 'https://www.atome.sg';
+
+  currentOfficalSite = currentOfficalSite.AtomeFormat({
+    lang: lang
+  });
+
+  if (document.body) {
+    appendTemplateOnce();
+  } else {
+    if (window.attachEvent) {
+      window.attachEvent('onload', appendTemplateOnce);
+    } else {
+      window.addEventListener('load', appendTemplateOnce, false);
+    }
+  }
+
+  document.addEventListener('click', function(e) {
+    const ele = e.target;
+    if (
+        (ele.className && typeof ele.className === 'string' && ele.className.includes('atome-icon'))
+        // new price divider popup
+        || ele.closest('.atome-intro-popup')
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!document.querySelector('.atome-mask')) {
+        appendTemplateOnce();
+      }
+      const atomeMask = document.querySelector('.atome-mask');
+      atomeMask.querySelectorAll('img').forEach(_ele => {
+        if (_ele.getAttribute('src')) {
+          return;
+        }
+
+        const srcId = _ele.getAttribute('data-atome-src');
+        if (srcId && imgSrcs[srcId]) {
+          _ele.setAttribute('src', imgSrcs[srcId]);
+        }
+      });
+      atomeMask.querySelector('#atome-introduction-container').style.display = '';
+      atomeMask.querySelector('#atome-terms-conditions-container').style.display = 'none';
+      atomeMask.style.display = '';
+    } else if (ele.className && typeof ele.className === 'string' && ele.className.includes('atome-mask')) {
+      document.querySelector('.atome-mask').style.display = 'none';
+    }
+  });
+
+
+  function appendTemplateOnce() {
+    const template = `
+        <div class="atome-main">
+          <div class="sub right" id="atome-introduction-container">
+            <img onclick="atomeWidget.hideAtome()" class="close" data-atome-src="close" />
+            <a href="${currentOfficalSite}" target="_blank">
+              <img class="atome-intro-logo" data-atome-src="logo" />
+            </a>
+            <div class="atome-love-it">${t('love-it')}</div>
+            <div class="atome-no-wait">${t('why-wait')}</div>
+            <div class="desc-container">
+              <div class="desc">
+                <img data-atome-src="zero_interest" />
+                <div class="text"><b>${t('o-interest')}</b><br />${t('100-tran')}</div>
+              </div>
+              <div class="desc">
+                <img data-atome-src="split_into_3" />
+                <div class="text"><b>${t('split-into-3')}</b><br />${t('free-expe')}</div>
+              </div>
+              <div class="desc">
+                <img data-atome-src="hundreds_merchants" />
+                <div class="text"><b>${t('hundreds-merchants')}</b><br />${t('vast-variety')}</div>
+              </div>
+            </div>
+            <a target="_blank" href="${currentTCLink}" class="terms-conditions">${t('terms-conditions')}</a>
+            <a target="_blank" href="${currentOfficalSite}/how-it-works" class="how-it-works" target="_blank">${t('how-works')}</a>
+          </div>
+          <div class="sub right" id="atome-terms-conditions-container" style="display:none;">
+            <img onclick="atomeWidget.hideAtome()" class="close" data-atome-src="close" />
+            <div class="back">
+              <img class="arrow-back" data-atome-src="arrow_back" /> 
+              <span>${t('back')}</span>
+            </div>
+          </div>
+        </div>`;
+
+    let atomeMask = document.querySelector('.atome-mask');
+    if (!atomeMask) {
+      atomeMask = document.createElement('div');
+      atomeMask.setAttribute('class', 'atome-mask');
+      atomeMask.style.display = 'none';
+      atomeMask = document.body.insertBefore(atomeMask, document.body.firstChild);
+      atomeMask.innerHTML = template;
+    }
+  }
+
+  const addToAtomeWidget = {
+    hideAtome,
+    gotoWeb,
+  };
+
+  if (window.atomeWidget) {
+    atomeWidget = { ...atomeWidget, ...addToAtomeWidget };
+  } else {
+    atomeWidget = addToAtomeWidget;
+  }
+
+  function hideAtome() {
+    document.querySelector('.atome-mask').style.display = 'none';
+  }
+
+  function gotoWeb() {
+    window.open('https://www.atome.' + country);
+  }
+
+  function queryParams(str) {
+    if (!(str && str.includes('?'))) {
+      return { country: 'sg', lang: 'en' };
+    }
+    const paramsArr = str.split('?')[1].split('&');
+    return paramsArr.reduce((acc, item) => {
+      const [k, v] = item.split('=');
+      acc[k] = k == 'lang' ? v.substring(0, 2) : v;
+      return acc;
+    }, {});
+  }
+
+  function t(key) {
+    let i18nRes = {
+      'love-it': 'Time to own it',
+      'why-wait': 'Why wait? Shop today, 0% interest over 3 payments.',
+      'o-interest': '0% interest',
+      '100-tran': '100% transparent',
+      'split-into-3': 'Split bill into 3 payments',
+      'free-expe': 'Hassle-free experience',
+      'hundreds-merchants': 'Hundreds of merchants',
+      'vast-variety': 'Vast variety',
+      'how-works': 'How it works',
+      'terms-conditions': 'Terms & Conditions',
+      'back': 'Back'
+    };
+
+    if (lang === 'zh') {
+      if (country === 'tw') {
+        i18nRes = {
+          'love-it': '即刻擁有',
+          'why-wait': '何須等待?享受今天立即擁有，0利率3期輕鬆付',
+          'o-interest': '0%利率',
+          '100-tran': '100%透明',
+          'split-into-3': '自動分三期',
+          'free-expe': '絕佳體驗',
+          'hundreds-merchants': '100+ 商店',
+          'vast-variety': '應有盡有',
+          'how-works': '如何運作',
+          'terms-conditions': '條款及細則',
+          back: '返回',
+        };
+      } else {
+        i18nRes = {
+          'love-it': '一愛即享，靈活付款。',
+          'why-wait': '別等了！用Atome購物，即享免息三期付款。',
+          'o-interest': '0%利息',
+          '100-tran': '100%透明度',
+          'split-into-3': '分三期付款',
+          'free-expe': '輕鬆無憂',
+          'hundreds-merchants': '100+ 商店',
+          'vast-variety': '應有盡有',
+          'how-works': '如何運作',
+          'terms-conditions': '條款及細則',
+          'back': '返回',
+        };
+      }
+    } else if (lang === 'id') {
+      i18nRes = {
+        'love-it': 'Cari. Belanja. Bayar nanti.',
+        'why-wait': 'Belanja sekarang dengan cicilan 0%, 3x pembayaran.',
+        'o-interest': 'Bunga 0%',
+        '100-tran': '100% Transparan',
+        'split-into-3': 'Bagi Tagihan dalam 3 Cicilan',
+        'free-expe': 'Pengalaman mudah dalam bertransaksi',
+        'hundreds-merchants': 'Ratusan Merchant',
+        'vast-variety': 'Banyak pilihan untuk berbelanja',
+        'how-works': 'Lihat Selengkapnya?',
+        'terms-conditions': 'Syarat & Ketentuan',
+        'back': 'Back'
+      };
+    } else if (lang === 'th') {
+      i18nRes = {
+        'love-it': 'ได้เวลาเป็นเจ้าของแล้ว',
+        'why-wait': 'อย่าลังเล ซื้อวันนี้ง่ายๆ, บิลแบ่งเป็น 3 งวดดอกเบี้ย 0%',
+        'o-interest': 'ดอกเบี้ย 0%',
+        '100-tran': 'โปร่งใส 100%',
+        'split-into-3': 'บิลจะถูกแบ่งเป็น 3 งวด',
+        'free-expe': 'ใช้งานง่าย',
+        'hundreds-merchants': 'มีร้านค้ามากมาย',
+        'vast-variety': 'มีหลากหลายแบรนด์',
+        'how-works': 'วิธีการใช้งาน',
+        'terms-conditions': 'เงื่อนไขและข้อตกลง',
+        'back': 'ย้อนกลับ',
+      };
+    } else if (lang === 'ja') {
+      i18nRes = {
+        'love-it': '今が買い時',
+        'why-wait': '待たずに今日お買い物、手数料無料で3回払い',
+        'o-interest': '手数料は無料',
+        '100-tran': '100%の透明性',
+        'split-into-3': '支払いを3回の分割払いに',
+        'free-expe': '手間いらずな買い物体験',
+        'hundreds-merchants': '選べる加盟店は多数',
+        'vast-variety': '多種多様なショッピング',
+        'how-works': '使い方',
+        'terms-conditions': '利用規約',
+        'back': '戻る',
+      };
+    }
+
+    if(/ph.sunniesstudios.com/.test(location.hostname) && key === 'how-works') {
+      return (i18nRes[key] ?? '').toUpperCase();
+    }
+
+    return i18nRes[key] || '';
+  }
+})();

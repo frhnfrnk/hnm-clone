@@ -1,0 +1,605 @@
+define([
+    'jquery',
+	'mage/translate',
+	'Apptus_Apptus/js/view/submit-filter',
+    'Magento_Catalog/js/price-utils',
+    'jquery/ui',
+    'accordion',
+    'productListToolbarForm'
+], function ($, $t, submitFilterAction, ultil) {
+    "use strict";
+	
+    return {
+
+        updateHrefInNavigation: function () {
+			var self = this;
+			var checkedArray = {};
+			var selectedFilterArr = '';
+			var disbledattr = true;			
+			$('#apptussearchFacets .checkboxChecked').each(function() {
+				if(checkedArray.hasOwnProperty(this.name)){
+					checkedArray[this.name] = checkedArray[this.name] + ',' + this.value;
+				}else{
+					checkedArray[this.name] = this.value;
+				}
+				var removedspecialchrs = this.value;
+				removedspecialchrs = removedspecialchrs.replace(/&/g, "%26");
+				removedspecialchrs = removedspecialchrs.replace(/[^0-9a-zA-Z_]/g, "");
+				if(this.name != 'sort_by'){
+					if(this.name == 'color_filter'){
+						var colorFilterValue = this.value;
+						var colorvalue = colorFilterValue.split('_');
+						if(colorvalue[0] != undefined && colorvalue[1] != undefined){
+							colorFilterValue = colorvalue[0];
+						}
+						selectedFilterArr += '<li class="item"><span class="filter-label">'+this.name+'</span><span class="filter-value">'+ $t(colorFilterValue) +'</span><a class="action remove" data-class="'+this.name+'_'+removedspecialchrs+'" href="javascript:void(0);" title="'+this.name+' '+ $t(this.value) +'"></a>';
+					}else{
+						selectedFilterArr += '<li class="item"><span class="filter-label">'+this.name+'</span><span class="filter-value">'+ $t(this.value) +'</span><a class="action remove" data-class="'+this.name+'_'+removedspecialchrs+'" href="javascript:void(0);" title="'+this.name+' '+ $t(this.value) +'"></a>';
+					}
+				}
+				disbledattr = false;
+			}); 
+			// enable disble clear all
+			if (disbledattr == false) {
+				$('.hm-megawrapper #mgf-clear').removeAttr("disabled");
+			}else{
+				$('.hm-megawrapper #mgf-clear').prop("disabled", true);
+			}
+					
+			// update selected values
+			var checkedArrayselect = {};
+			$('#apptussearchFacets .checkboxChecked').each(function() {
+				var selectedFilterVal = this.value;
+				if(this.name == 'color_filter'){
+					var splitValue = selectedFilterVal.split('_');
+					if(splitValue[0] != undefined && splitValue[1] != undefined){
+						selectedFilterVal = splitValue[0];
+					}
+				}
+				if(checkedArrayselect.hasOwnProperty(this.name)){
+					checkedArrayselect[this.name] = checkedArrayselect[this.name] +', '+ selectedFilterVal;
+				}else{
+					checkedArrayselect[this.name] = selectedFilterVal;
+				}
+				
+			});
+			$('.allfilters-filter-options .filter-options-item').each(function () {
+				var item = $(this);
+				var attributename = item.data('attribute');
+				if(checkedArrayselect[attributename] != undefined){
+					var textOptions = checkedArrayselect[attributename].split(', ');
+					textOptions = textOptions.map(text => $t(text));
+					$('.mfg_selected_'+attributename).html(textOptions.join(', ').replace(/%26/g, "&"));
+				}else{
+					$('.mfg_selected_'+attributename).html('');
+				}
+			});
+			var sortbychecked = $(".allfilters-filter-options input[name='sortby']:checked").val();
+			if(sortbychecked == undefined){
+				sortbychecked = $(".filter-options input[name='sort_by'].checkboxChecked").val();
+			}
+			var sortbyName = '';
+			if(sortbychecked == 'relevance'){ sortbyName = 'Recommended'; }
+			if(sortbychecked == 'is_new,desc'){ sortbyName = 'Newest'; }
+			if(sortbychecked == 'price,asc'){ sortbyName = 'Lowest price'; }
+			if(sortbychecked == 'price,desc'){ sortbyName = 'Highest price'; }
+			$('.mfg_selected_sortby').html($t(sortbyName));
+			
+			// update selected values ended
+			$('.category-filter-options .checkboxChecked').each(function() {
+				if(checkedArray.hasOwnProperty(this.name)){
+					var existArrayval = checkedArray[this.name];
+					checkedArray[this.name] = existArrayval+','+ $t(this.value);
+				}else{
+					checkedArray[this.name] = $t(this.value);
+				}
+			}); 
+			
+			if(selectedFilterArr == ''){
+				$('.filterCurrentAttrshowhide').css("display","none");
+			}else{
+				$('.filterCurrentAttrshowhide').css("display","block");
+			}
+			$('#filterCurrentAttr').html(selectedFilterArr);
+			self.selectedClearOptions();
+			/* self.initObserve();
+			if($('.hm-megawrapper').hasClass('active')){
+				$('.hm-megawrapper .checkboxChecked').each(function() {
+					if(checkedArray.hasOwnProperty(this.name)){
+						var existArrayval = checkedArray[this.name];
+						checkedArray[this.name] = existArrayval+','+this.value;
+					}else{
+						checkedArray[this.name] = this.value;
+					}
+				});
+			} */
+			var urlStr = window.location.href;
+			var paramUrls = urlStr.split('?');
+			var baseurlSearch = paramUrls[0];
+			var currentUrl = '';
+			if($('.current_page_action').val() == 'catalogsearch_result_index'){
+				currentUrl = baseurlSearch+'?q='+document.getElementById('search').value.trim();
+			}
+			
+			if($('.current_page_action').val() == 'catalog_category_view'){
+				currentUrl = baseurlSearch+'?';
+			}
+			
+			$('.ln-items-colections li a').each(function(){ 
+			var nextcheckbox = $(this).find("input");
+			var newCheckedArray = {};
+
+			if(nextcheckbox.val() != ''){
+			if(checkedArray.hasOwnProperty(nextcheckbox.attr("name"))){
+					var existArrayvalnext = checkedArray[nextcheckbox.attr("name")];
+					newCheckedArray[nextcheckbox.attr("name")] = existArrayvalnext+','+nextcheckbox.val();
+				}else{
+					newCheckedArray[nextcheckbox.attr("name")] = nextcheckbox.val();
+				}
+			}
+			//var merged = {};
+			//Object.keys(checkedArray).concat(Object.keys(newCheckedArray)).forEach(k => merged[k] = k in newCheckedArray ? newCheckedArray[k] : checkedArray[k]);
+
+			var urlParams = '';
+			var paramKeyArrays = Object.keys(checkedArray);
+			for (var l=0; l <= paramKeyArrays.length; l++) {
+				if(paramKeyArrays[l] != undefined){
+					urlParams += '&'+paramKeyArrays[l]+'='+checkedArray[paramKeyArrays[l]];
+				}
+			}
+				$(this).prop("href", currentUrl+urlParams);
+			});
+			
+			return checkedArray;
+		},
+		
+        initObserve: function () {
+            var self = this;
+			// back history view
+            $(window).on('popstate', function(event){
+				$('.checkboxChecked').each(function () {
+					$(this).removeClass('checkboxChecked');
+					$(this).prop('checked', false);
+				});
+						
+				if($('input[type=radio]').hasClass('radiosortby')){
+					$('.filter-options input[type=radio]').each(function () {
+						$(this).removeClass('checkboxChecked');
+						$(this).prop('checked', false);
+					});
+					$('.allfilters-filter-options input[type=radio]').each(function () {
+						$(this).prop('checked', false);
+						$(this).parent('a').removeClass('selected');
+						$(this).parent('a').addClass('undefined');
+					});
+				}
+				$('#filterCurrentAttr').html('');
+				$('.hm-megawrapper.active #mgf-clear').prop("disabled", true);
+				$('.filterCurrentAttrshowhide').css("display", "none");
+				///clear selected flag
+				$('.mfg-selected').each(function () {
+					if(!$(this).hasClass('mfg_selected_sortby')){
+						$(this).html('');
+					}
+				});
+				
+				var hrefpath = window.location.href;
+				var pathurls = hrefpath.split('?');
+				if(pathurls[1] != undefined){
+					var query = pathurls[1];
+					var vars = query.split('&');
+					for (var i = 0; i < vars.length; i++) {
+						var pair = vars[i].split('=');
+						if(pair[0] != 'q' && pair[0] != 'sort_by' && pair[0] != 'cat' && pair[0] != 'offset'){
+							if(pair[0] != "" && pair[1] != ""){
+								if(pair[0] != undefined && pair[1] != undefined){
+									var attrArrays = pair[1].split(',');
+									var lengthArray = attrArrays.length;
+									for (var l = 0; l <= lengthArray; l++) { 
+										if(attrArrays[l] != undefined){
+											var removedspecialchr = attrArrays[l].replace(/[^0-9a-zA-Z_]/g, "");
+											$('.checkbox_'+pair[0]+'_'+removedspecialchr).each(function () {
+												$(this).addClass('checkboxChecked');
+												$(this).prop('checked', true);
+											});
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				var selectedFilterArr = '';
+				$('#apptussearchFacets .checkboxChecked').each(function() {
+					var removedspecialchrs = this.value;
+					removedspecialchrs = removedspecialchrs.replace(/&/g, "%26");
+					removedspecialchrs = removedspecialchrs.replace(/[^0-9a-zA-Z_]/g, "");
+					if(this.name != 'sort_by'){
+						if(this.name == 'color_filter'){
+							var colorFilterValue = this.value;
+							var colorvalue = colorFilterValue.split('_');
+							if(colorvalue[0] != undefined && colorvalue[1] != undefined){
+								colorFilterValue = colorvalue[0];
+							}
+							selectedFilterArr += '<li class="item"><span class="filter-label">'+this.name+'</span><span class="filter-value">'+ $t(colorFilterValue) +'</span><a class="action remove" data-class="'+this.name+'_'+removedspecialchrs+'" href="javascript:void(0);" title="'+this.name+' '+this.value+'"></a>';
+						}else{
+							selectedFilterArr += '<li class="item"><span class="filter-label">'+this.name+'</span><span class="filter-value">'+ $t(this.value) +'</span><a class="action remove" data-class="'+this.name+'_'+removedspecialchrs+'" href="javascript:void(0);" title="'+this.name+' '+this.value+'"></a>';
+						}
+					}
+				}); 
+				if(selectedFilterArr == ''){
+					$('.filterCurrentAttrshowhide').css("display","none");
+				}else{
+					$('.filterCurrentAttrshowhide').css("display","block");
+				}
+				$('#filterCurrentAttr').html(selectedFilterArr);
+				self.selectedClearOptions();
+				
+				/* $('.allfilters-filter-options .filter-options-item').each(function () {
+					var item = $(this);
+					var attributename = item.data('attribute');
+					if(checkedArrayselect[attributename] != undefined){
+						$('.mfg_selected_'+attributename).html(checkedArrayselect[attributename].replace(/%26/g, "&"));
+					}else{
+						$('.mfg_selected_'+attributename).html('');
+					}
+				}); */
+				var sortbychecked = $(".allfilters-filter-options input[name='sortby']:checked").val();
+				if(sortbychecked == undefined){
+					sortbychecked = $(".filter-options input[name='sort_by'].checkboxChecked").val();
+				}
+				var sortbyName = '';
+				if(sortbychecked == 'relevance'){ sortbyName = 'Recommended'; }
+				if(sortbychecked == 'is_new,desc'){ sortbyName = 'Newest'; }
+				if(sortbychecked == 'price,asc'){ sortbyName = 'Lowest price'; }
+				if(sortbychecked == 'price,desc'){ sortbyName = 'Highest price'; }
+				$('.mfg_selected_sortby').html($t(sortbyName));
+			
+				var formSubmitting = false;
+				$('#search_mini_form').submit(function (e) {
+					formSubmitting = true;
+				});
+				if(formSubmitting == false){
+					self.ajaxSubmit(window.location.href, 2);
+				}
+				//event.stopPropagation();
+				//event.preventDefault();
+			});
+           // var optionElements = this.element.find('.filter-options a');
+            $('.filter-options a').each(function (index) {
+                var el = $(this),
+                    link = self.checkUrl(el.prop('href'));
+                if (!link) {
+                    return;
+                }
+                 el.off().on('click', function (e) {
+					 e.stopPropagation();
+					e.preventDefault();
+                   /*  if (el.hasClass('swatch-option-link-layered')) {
+                        //self.selectSwatchOption(el);
+                    } else {
+                        var checkboxEl = el.find(self.options.checkboxEl);
+                        checkboxEl.prop('checked', !checkboxEl.prop('checked'));
+                    } */
+					var checkboxcheckedclass = $(this).data('class');
+					$('.'+checkboxcheckedclass).each(function () {
+						if ($(this).hasClass('checkboxChecked')) {
+							$(this).removeClass('checkboxChecked');
+							$(this).prop('checked', true);
+						}else{
+							$(this).addClass('checkboxChecked');
+							$(this).prop('checked', false);
+						}
+					});
+					if($(this).children('input[type=radio]').hasClass('radiosortby')){
+						$('.filter-options input[type=radio]').each(function () {
+							$(this).removeClass('checkboxChecked');
+							$(this).prop('checked', false);
+						});
+						$('.allfilters-filter-options input[type=radio]').each(function () {
+							$(this).prop('checked', false);
+							$(this).parent('a').removeClass('selected');
+							$(this).parent('a').addClass('undefined');
+						});
+						var checkboxcheckedclasstop = $(this).data('class');
+						$('.checkbox_'+checkboxcheckedclasstop).each(function () {
+								$(this).addClass('checkboxChecked');
+								$(this).prop('checked', false);
+								$(this).parent('a').addClass('selected');
+						});
+					}
+                     /*custom code start*/ 
+                    $('#check_filter_call').val('0').trigger('change');
+                    if (el.closest('.column.main').length == 1) {
+                        $('#check_filter_call').val('1').trigger('change');
+                    }
+					var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var baseurlSearch = paramUrls[0];
+					var currentUrl = '';
+					if($('.current_page_action').val() == 'catalogsearch_result_index'){
+						currentUrl = baseurlSearch+'?q='+document.getElementById('search').value.trim();
+					}
+					
+					if($('.current_page_action').val() == 'catalog_category_view'){
+						currentUrl = baseurlSearch+'?';
+					}
+			
+                   var checkedArray = self.updateHrefInNavigation();
+					
+					var ajaxurlParams = '';
+					var paramKeyArraysAjax = Object.keys(checkedArray);
+					for (var l=0; l <= paramKeyArraysAjax.length; l++) {
+						if(paramKeyArraysAjax[l] != undefined){
+							ajaxurlParams += '&'+paramKeyArraysAjax[l]+'='+checkedArray[paramKeyArraysAjax[l]];
+						}
+					}
+
+					link = currentUrl+ajaxurlParams;
+                    /*custom code end*/
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						 self.ajaxSubmit(link, 1);
+					}
+                });
+            });
+		
+            $('.allfilters-filter-options a').each(function (index) {
+                var el = $(this),
+                    link = self.checkUrl(el.prop('href'));
+                if (!link) {
+                    return;
+                }
+                 el.off().on('click', function (e) {
+					 e.stopPropagation();
+                    e.preventDefault();
+					
+					var checkboxcheckedclass = $(this).data('class');
+					$('.'+checkboxcheckedclass).each(function () {
+						if ($(this).hasClass('checkboxChecked')) {
+							$(this).removeClass('checkboxChecked');
+							$(this).prop('checked', false);
+						}else{
+							$(this).addClass('checkboxChecked');
+							$(this).prop('checked', true);
+						}
+					});
+					if($(this).children('input[type=radio]').hasClass('radiosortby')){
+						$('.radiosortby').each(function () {
+							$(this).removeClass('checkboxChecked');
+							$(this).parent('a').removeClass('selected');
+							$(this).prop('checked', false);
+						});
+						var checkboxcheckedclasss = $(this).data('class');
+						$('.checkbox_'+checkboxcheckedclasss).each(function () { 
+							if ($(this).hasClass('checkboxChecked')) {
+								$(this).removeClass('checkboxChecked');
+								$(this).parent('a').removeClass('selected');
+								$(this).prop('checked', false);
+							}else{
+								$(this).addClass('checkboxChecked');
+								$(this).parent('a').addClass('selected');
+								$(this).prop('checked', true);
+							}
+						});
+					}
+					
+                     /*custom code start*/ 
+                    $('#check_filter_call').val('0').trigger('change');
+                    if (el.closest('.column.main').length == 1) {
+                        $('#check_filter_call').val('1').trigger('change');
+                    }
+					var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var baseurlSearch = paramUrls[0];
+					var currentUrl = '';
+					if($('.current_page_action').val() == 'catalogsearch_result_index'){
+						currentUrl = baseurlSearch+'?q='+document.getElementById('search').value.trim();
+					}
+					
+					if($('.current_page_action').val() == 'catalog_category_view'){
+						currentUrl = baseurlSearch+'?';
+					}
+			
+                   var checkedArray = self.updateHrefInNavigation();
+					
+					var ajaxurlParams = '';
+					var paramKeyArraysAjax = Object.keys(checkedArray);
+					for (var l=0; l <= paramKeyArraysAjax.length; l++) {
+						if(paramKeyArraysAjax[l] != undefined){
+							ajaxurlParams += '&'+paramKeyArraysAjax[l]+'='+checkedArray[paramKeyArraysAjax[l]];
+						}
+					}
+
+					link = currentUrl+ajaxurlParams;
+                    /*custom code end*/
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						 self.ajaxSubmit(link, 1);
+					}
+                });
+			});
+				//var optionElementsCategory = this.element.find('.category-filter-options a');
+            $('.category-filter-options a').each(function (index) {
+                var el = $(this);              
+				
+                 el.off().on('click', function (e) {
+					 e.stopPropagation();
+                    e.preventDefault();
+					
+					$('.checkboxChecked').each(function () {
+						if($(this).attr('name') != 'sort_by' && $(this).attr('name') != 'sortby'){
+							$(this).removeClass('checkboxChecked');
+							$(this).prop('checked', false);
+						}
+						
+					});
+					var checkboxcheckedclass = $(this).data('class');
+				
+						if ($(this).children('input[type=checkbox]').hasClass('checkboxChecked')) {
+							$(this).children('input[type=checkbox]').removeClass('checkboxChecked');
+							$(this).children('input[type=checkbox]').prop('checked', false);
+						}else{
+							$(this).children('input[type=checkbox]').addClass('checkboxChecked');
+							$(this).children('input[type=checkbox]').prop('checked', true);
+						}
+					
+                     /*custom code start*/ 
+                    $('#check_filter_call').val('0').trigger('change');
+                    if (el.closest('.column.main').length == 1) {
+                        $('#check_filter_call').val('1').trigger('change');
+                    }
+					var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var baseurlSearch = paramUrls[0];
+					var currentUrl = '';
+					if($('.current_page_action').val() == 'catalogsearch_result_index'){
+						currentUrl = baseurlSearch+'?q='+document.getElementById('search').value.trim();
+					}
+					
+					if($('.current_page_action').val() == 'catalog_category_view'){
+						currentUrl = baseurlSearch+'?';
+					}
+			
+                   var checkedArray = self.updateHrefInNavigation();
+					
+					var ajaxurlParams = '';
+					var paramKeyArraysAjax = Object.keys(checkedArray);
+					for (var l=0; l <= paramKeyArraysAjax.length; l++) {
+						if(paramKeyArraysAjax[l] != undefined && paramKeyArraysAjax[l] == 'cat' || paramKeyArraysAjax[l] == 'sort_by'){
+							ajaxurlParams += '&'+paramKeyArraysAjax[l]+'='+checkedArray[paramKeyArraysAjax[l]];
+						}
+					}
+
+					var link = currentUrl+ajaxurlParams;
+                    /*custom code end*/
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						 self.ajaxSubmit(link, 1);
+					}
+                });
+				
+            });
+			// clear all 
+			$('#mgf-clear').on('click', function (e) {
+				$('.checkboxChecked').each(function () {
+					if($(this).attr('name') != 'sort_by' && $(this).attr('name') != 'sortby'){
+						$(this).removeClass('checkboxChecked');
+						$(this).prop('checked', false);
+					}
+				});
+				$('#filterCurrentAttr').html('');
+				$('.hm-megawrapper.active #mgf-clear').prop("disabled", true);
+				$('.filterCurrentAttrshowhide').css("display", "none");
+				///clear selected flag
+				$('.mfg-selected').each(function () {
+					if(!$(this).hasClass('mfg_selected_sortby')){
+						$(this).html('');
+					}
+				});
+				 var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var currentUrl = paramUrls[0];
+					if($('.current_page_action').val() == 'catalogsearch_result_index'){
+					currentUrl = currentUrl+'?q='+document.getElementById('search').value.trim();
+					}
+
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						self.ajaxSubmit(currentUrl, 1);
+					}
+			});
+			/* if($('.current_page_action').val() == 'catalogsearch_result_index'){
+				 $('#search_mini_form .action.search').on('click', function (e) {
+					 var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var baseurlSearch = paramUrls[0];
+					var currentUrl = baseurlSearch+'?';
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						self.ajaxSubmit(currentUrl, 1);
+					}
+                    e.stopPropagation();
+                    e.preventDefault();
+				 }); 
+			} */
+        },
+		selectedClearOptions: function () {
+			var self = this;
+			$('#filterCurrentAttr li a').each(function () {
+				$(this).off().on('click', function (e) {
+					
+					var dataClass = $(this).data('class');
+					$('.checkbox_'+dataClass).each(function () {
+						if ($(this).hasClass('checkboxChecked')) {
+							$(this).removeClass('checkboxChecked');
+							$(this).prop('checked', true);
+						}else{
+							$(this).addClass('checkboxChecked');
+							$(this).prop('checked', false);
+						}
+					});
+					
+					var urlStr = window.location.href;
+					var paramUrls = urlStr.split('?');
+					var baseurlSearch = paramUrls[0];
+					var currentUrl = '';
+					if($('.current_page_action').val() == 'catalogsearch_result_index'){
+						currentUrl = baseurlSearch+'?q='+document.getElementById('search').value.trim();
+					}
+					
+					if($('.current_page_action').val() == 'catalog_category_view'){
+						currentUrl = baseurlSearch+'?';
+					}
+					var checkedArray = self.updateHrefInNavigation();
+					
+					var ajaxurlParams = '';
+					var paramKeyArraysAjax = Object.keys(checkedArray);
+					for (var l=0; l <= paramKeyArraysAjax.length; l++) {
+						if(paramKeyArraysAjax[l] != undefined){
+							ajaxurlParams += '&'+paramKeyArraysAjax[l]+'='+checkedArray[paramKeyArraysAjax[l]];
+						}
+					}
+
+					var link = currentUrl+ajaxurlParams;
+					e.stopPropagation();
+					e.preventDefault();
+					
+					var formSubmitting = false;
+					$('#search_mini_form').submit(function (e) {
+						formSubmitting = true;
+					});
+					if(formSubmitting == false){
+						self.ajaxSubmit(link, 1);
+					}
+				});
+			});
+        },
+	   
+        ajaxSubmit: function (submitUrl, state) {
+            //this.element.find(this.options.mobileShopbyElement).trigger('click');
+             return submitFilterAction(submitUrl, state);
+		},
+        checkUrl: function (url) {
+            var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/;
+
+            return regex.test(url) ? url : null;
+        }
+    };
+
+});
